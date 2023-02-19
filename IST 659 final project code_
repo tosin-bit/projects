@@ -1,0 +1,252 @@
+-- Creating the Table for Clinic
+-- ClinicID is a manufactured unique ID that I created as I know there will only be handful of Equine Clinics
+-- that we will use for vaccines
+-- It is important that we have an address (hence, not null), city, state and zip for each clinic as well as 
+-- their phone number
+CREATE TABLE Clinic (
+	-- Columns for the Clinic table
+	ClinicID varchar(3) not null,
+	ClinicName varchar(40) not null,
+	WebSiteURL varchar(60),
+	Phone varchar(10) not null,
+	StreetAddress varchar(65) not null,
+	City varchar(25) not null,
+	StateAbbr varchar(2) not null,
+	Zip varchar(6) not null,
+	-- Constraints on the Clinic Table
+	-- This indicates that the ClinicID will be our primary key which is used as a foreign key in other tables
+	CONSTRAINT PK_ClinicID PRIMARY KEY (ClinicID)
+)
+-- End Creating Clinic Table
+
+-- Creating the Table for Vet
+-- I could have created a way to automatically create the vet ID from the ClinicID and the next available number
+-- however, I know each clinic never has more than 9 vets - most of 2 or 3.
+-- The only required informatino is the VetID (unique primary key) and the First and Last Name
+-- There is a not null foreign key to associate this vet with one and only one Clinic
+CREATE TABLE Vet (
+	-- Columns for the Vet table
+	VetID varchar(4) not null,
+	FirstName varchar(20) not null,
+	LastName varchar(20) not null,
+	LicenseNumber varchar(20),
+	CellPhone varchar(10),
+	ClinicID varchar(3) not null,
+	-- Constraints on the Vet Table
+	CONSTRAINT PK_VetID PRIMARY KEY (VetID),
+	CONSTRAINT FK1_Vet FOREIGN KEY (ClinicID) REFERENCES Clinic(ClinicID)
+)
+-- End Creating Vet Table
+
+-- Creating the Table for Barn
+-- BARN ID is a unique abbrevation for a barn (sharing its state location as well).
+-- It is a primary key. All other information is mandatory (hence, not null)
+CREATE TABLE Barn (
+	-- Columns for the Barn table
+	BarnID varchar(3) not null,
+	Name varchar(60) not null,
+	StreetAddress varchar(65) not null,
+	City varchar(25) not null,
+	StateAbbr varchar(2) not null,
+	Zip varchar(6) not null,
+	Phone varchar(10) not null,
+	-- Constraints on the Clinic Table
+	CONSTRAINT PK_BarnID PRIMARY KEY (BarnID)
+)
+-- End Creating BarnTable
+
+-- Creating the Table for Horse
+-- Note: the Microchip is a varchar(30) to accomodate the upcoming chips for the
+-- the United States Equestrian Federation ruling for all horses to be microchipped by 2019
+CREATE TABLE Horse (
+	-- Columns for the Horse table
+	HorseID int identity not null,
+	Microchip varchar(30) not null,
+	BarnName varchar(20) not null,
+	ShowName varchar(35) not null,
+	FoalDate date not null,
+	Breed varchar(20) not null,
+	BarnID varchar(3) not null,
+	-- Constraints on the Horse table
+	CONSTRAINT PK_HorseID PRIMARY KEY (HorseID),
+	CONSTRAINT FK1_Horse FOREIGN KEY (BarnID) REFERENCES Barn(BarnID)
+)
+-- End Creating Horse Table
+
+-- Creating the Table for Vaccine
+-- the Vaccine table is simple, just the name and cycle - which now is only Annual.
+-- I could have added complexity by have a Cycle table with "Annual", "SemiAnnual", "Quarterly", but most vaccines
+-- are annual, so it seemed overkill
+-- the VaccineID is unique (identity) and also the primary key. All fields are mandatory.
+CREATE TABLE Vaccine (
+	-- Columns for the Vaccine table
+	VaccineID int identity not null,
+	Name varchar(20) not null,
+	Cycle varchar(15) not null,
+	-- Constraints on the Vaccine table
+	CONSTRAINT PK_VaccineID PRIMARY KEY (VaccineID)
+)
+-- End Creating Vaccine Table
+
+-- Creating the Table for HorseVaccine
+-- This table is the one that has all the foreign keys for: 
+--      Microchip (Horse), VaccineID (Vaccine), VetID (Vet)
+-- This is the table that links each horse to its vaccines on which date by which vet
+CREATE TABLE HorseVaccine (
+	-- Columns for the HorseVaccine table
+	HorseVaccineID int identity not null,
+	HorseID int not null,
+	VaccineID int not null,
+	VaccineBatch varchar(20),
+	VaccineDate date not null,
+	--- This should be created based on the value of VaccineDate (if annual, then add 12 months, etc.)
+	--- However, we have a procedure to do that later 
+	VaccineScheduledDate date,
+	VaccineCost decimal (6,2) not null,
+	VetID varchar(4) not null,
+	-- Constraints on the HorseVaccine table
+	CONSTRAINT PK_HorseVaccineID PRIMARY KEY (HorseVaccineID),
+	CONSTRAINT FK1_HorseVaccine FOREIGN KEY (HorseID) REFERENCES Horse(HorseID),
+	CONSTRAINT FK2_HorseVaccine FOREIGN KEY (VaccineID) REFERENCES Vaccine(VaccineID),
+	CONSTRAINT FK3_HorseVaccine FOREIGN KEY (VetID) REFERENCES Vet(VetID)
+)
+
+INSERT INTO Vaccine
+	(Name, Cycle)
+	VALUES
+		('E/W/T/Flu/Rhino', 'Annual'),
+		('Potomac - Spring', 'Annual'),
+		('Rabies', 'Annual'),
+		('Coggins', 'Annual'),
+		('West Nile', 'Annual'),
+		('Strangles', 'Annual'),
+		('Potomac - Fall', 'Annual'),
+		('Flu/Rhino - Fall', 'Annual'),
+		('Fecal', 'Annual'),
+		('Lyme Titer', 'Annual')
+
+SELECT * from Vaccine
+
+INSERT INTO Barn
+	(BarnID, Name, StreetAddress, City, StateAbbr, Zip, Phone)
+	VALUES
+		('NY1', 'Wolfden Stables', '2898 State Route 352', 'Elmira', 'NY', '14903', '6078573488'),
+		('CT1', 'Hunters Run Stables', '78 Hunter Lane', 'Glastonbury', 'CT', '06033', '8606337685'),
+		('NY2', 'Cazenovia College Equestrian Center', 'Woodfield Road', 'Cazenovia', 'NY', '13035', '8006543210'),
+		('PA1', 'Carved Oak Homestead', '1053 Wilkes Road', 'Gillett', 'PA', '16925', '8607168128'),
+		('NY3', 'Alfred University Equestrian Center', '5174 Lake Road', 'Alfred Station', 'NY', '14803', '6075879012')
+-- End table insert
+
+-- Verify results
+select * from Barn
+	order by BarnID
+
+INSERT INTO Horse
+	(Microchip, BarnName, ShowName, FoalDate, Breed, BarnID)
+	VALUES
+		('1', 'Berkeley', 'No Fault of Mine', '05/12/2008', 'Clyde/TB', 'NY1'),
+		('2', 'Batman', 'Gotham', '01/20/2007', 'QH', 'NY1'),
+		('3', 'Q', 'Dun Q', '05/02/2016', 'QH', 'NY1'),
+		('4', 'Erin', 'Forever Eowyn', '04/15/2001', 'TB/QH', 'NY2'),
+		('5', 'Chicago', 'Untouchable', '04/20/2007', 'CSH', 'NY2'),
+		('6', 'Sully', 'Secret Decision', '07/02/2006', 'TB/Perch', 'CT1')
+
+SELECT * from Horse	
+	ORDER BY BarnID
+
+INSERT INTO Clinic
+	(ClinicID, ClinicName, WebSiteURL, Phone, StreetAddress, City, StateAbbr, Zip)
+	VALUES
+		('CTE', 'CT Equine Clinic', 'connecticutequineclinic.com', '8607421580', '824 Flanders Road', 'Coventry', 'CT', '06238'),
+		('LKW', 'Lakewood Veterinary', 'lakewoodveterinary.com', '5854375120', '8840 Route 243', 'Rushford', 'NY', '14777'),
+		('ASC', 'Alfred State College', '', '5854375120', '10 Upper College Drive', 'Alfred', 'NY', '14802'),
+		('SPV', 'Southport Veterinary Services', 'southportvetservices.wordpress.com', '6077345755', '1384 Pennsylvania Avenue', 'Pine City', 'NY','14871'),
+		('FLE', 'Finger Lakes Equine Practice', 'fingerlakesequine.com', '6073474770', '45 Lower Creek Road', 'Ithaca', 'NY', '14850')
+
+SELECT * from Clinic
+	ORDER BY Clinic.ClinicID
+INSERT into Vet
+	(VetID, FirstName, LastName, LicenseNumber, CellPhone, ClinicID)
+	VALUES
+		('CTE1', 'Mike', 'Reilly', '', '', 'CTE'),
+		('CTE2', 'Scott', 'Sears', '', '', 'CTE'),
+		('ASC1', 'Douglas', 'Pierson', '011449-1 NYS', '', 'ASC'),
+		('CTE3', 'Ginny', 'Williamson', '', '', 'CTE'),
+		('SVP1', 'Hannah', 'Smith', '', '', 'SPV'),
+		('LKW1', 'Joe', 'Jones', '', '', 'LKW')
+
+SELECT * FROM Vet
+
+INSERT INTO HorseVaccine
+            (HorseID, VaccineID, VaccineBatch, VaccineDate, VaccineScheduledDate, VaccineCost, VetID)
+    VALUES
+        ('1','1','','5/29/2018','',67.00,'CTE1'),
+        ('1','2','','5/29/2018','',47.00,'CTE1'),
+        ('1','3','','5/29/2018','',50.00,'CTE1'),
+        ('1','4','','5/29/2018','',48.00,'CTE1'),
+        ('1','5','','5/29/2018','',47.00,'CTE1'),
+        ('1','6','','2/23/2018','',40.00,'CTE1'),
+        ('1','7','','12/1/2017','11/15/2018',30.00,'LKW1'),
+        ('1','8','','12/1/2017','11/15/2018',33.00,'LKW1'),
+        ('1','9','','12/10/2017','11/15/2018',25.00,'CTE2'),
+        ('2','1','','5/29/2018','',67.00,'CTE1'),
+        ('2','2','','5/29/2018','',47.00,'CTE1'),
+        ('2','3','','5/29/2018','',50.00,'CTE1'),
+        ('2','4','','5/29/2018','',48.00,'CTE1'),
+        ('2','5','','5/29/2018','',47.00,'CTE1'),
+        ('2','6','','2/23/2018','',40.00,'CTE1'),
+        ('2','7','','12/1/2017','11/15/2018',30.00,'LKW1'),
+        ('2','8','','12/1/2017','11/15/2018',33.00,'LKW1'),
+        ('2','9','','12/10/2017','11/15/2018',25.00,'CTE2'),
+        ('3','1','MER-14084A','5/7/2018','',67.00,'ASC1'),
+        ('3','3','','5/7/2018','',50.00,'CTE1'),
+        ('3','4','','5/7/2018','',48.00,'CTE1'),
+        ('3','5','','5/7/2018','',47.00,'CTE1'),
+        ('3','7','','10/15/2018','',30.00,'SVP1'),
+        ('4','1','','5/29/2018','',67.00,'CTE1'),
+        ('4','2','','5/29/2018','',47.00,'CTE1'),
+        ('4','3','','5/29/2018','',50.00,'CTE1'),
+        ('4','4','','5/29/2018','',48.00,'CTE1'),
+        ('4','5','','5/29/2018','',47.00,'CTE1'),
+        ('4','6','','2/17/2018','',40.00,'CTE3'),
+        ('4','7','','11/29/2017','11/29/2018',40.00,'CTE2'),
+        ('4','8','','11/29/2017','11/29/2018',62.00,'CTE2'),
+        ('4','9','','11/23/2017','11/29/2018',25.00,'CTE2'),
+        ('5','1','','5/29/2018','',67.00,'CTE1'),
+        ('5','2','','5/29/2018','',47.00,'CTE1'),
+        ('5','3','','5/29/2018','',50.00,'CTE1'),
+        ('5','4','','5/29/2018','',48.00,'CTE1'),
+        ('5','5','','5/29/2018','',47.00,'CTE1'),
+        ('5','6','','2/17/2018','',40.00,'CTE3'),
+        ('5','7','','11/29/2017','11/29/2018',40.00,'CTE2'),
+        ('5','8','','11/29/2017','11/29/2018',62.00,'CTE2'),
+        ('5','9','','11/23/2017','11/29/2018',25.00,'CTE2'),
+        ('6','1','','5/29/2018','',67.00,'CTE1'),
+        ('6','2','','5/29/2018','',47.00,'CTE1'),
+        ('6','3','','5/29/2018','',50.00,'CTE1'),
+        ('6','4','','5/29/2018','',48.00,'CTE1'),
+        ('6','5','','5/29/2018','',47.00,'CTE1'),
+        ('6','6','','2/17/2018','',40.00,'CTE3'),
+        ('6','7','','11/29/2017','11/29/2018',40.00,'CTE2'),
+        ('6','8','','11/29/2017','11/29/2018',62.00,'CTE2'),
+        ('6','9','','11/23/2017','11/29/2018',25.00,'CTE2'),
+        ('1','7','','11/14/2018','11/14/2019',32.00,'SVP1'),
+        ('1','8','','11/14/2018','11/14/2019',28.00,'SVP1'),
+        ('1','9','','11/14/2018','11/14/2019',11.00,'SVP1'),
+        ('1','10','','11/14/2018','','$45.00','SVP1'),
+        ('1','10','','5/29/2018','',60.00,'CTE1'),
+        ('2','7','','11/14/2018','11/14/2019',32.00,'SVP1'),
+        ('2','8','','11/14/2018','11/14/2019',28.00,'SVP1'),
+        ('2','9','','11/14/2018','11/14/2019',11.00,'SVP1'),
+        ('2','10','','11/14/2018','',45.00,'SVP1'),
+        ('3','8','','11/14/2018','11/14/2019',28.00,'SVP1'),
+        ('3','9','','11/14/2018','11/14/2019',11.00,'SVP1'),
+        ('3','10','','11/14/2018','',45.00,'SVP1'),
+        ('2','10','','5/29/2018','',60.00,'CTE1'),
+        ('4','10','','5/29/2018','',60.00,'CTE1'),
+        ('5','10','','5/29/2018','',60.00,'CTE1'),
+        ('6','10','','5/29/2018','',60.00,'CTE1'),
+        ('3','4','','11/14/2018','11/14/2019',43.00,'SVP1')
+-- End Insert
+x
+
